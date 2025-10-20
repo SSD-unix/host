@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+python-multipart
+sqlalchemy
+passlib[bcrypt]
+python-jose
+dnspython
