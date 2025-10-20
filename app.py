@@ -381,3 +381,6 @@ function saveSite(){
 @app.get("/admin", response_class=HTMLResponse)
 def admin_panel():
     return ADMIN_HTML
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=5000)
