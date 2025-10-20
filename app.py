@@ -235,7 +235,7 @@ ADMIN_HTML = """<!doctype html>
 <html>
 <head>
 <meta charset="utf-8">
-<title>FastAPI Hosting — Admin Panel</title>
+<title>FastAPI Hosting v1.0 — Admin Panel</title>
 <style>
 body{font-family:system-ui, Arial;background:#0f172a;color:#e2e8f0;margin:0;padding:0}
 .app{max-width:1100px;margin:20px auto;padding:20px;background:#020617;border-radius:8px}
@@ -377,6 +377,31 @@ function saveSite(){
 </body>
 </html>
 """
+
+# ---------------- Auth Endpoints ----------------
+from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.responses import JSONResponse
+from fastapi import Depends, HTTPException
+
+# Регистрация нового пользователя
+@app.post("/register")
+def register(username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+    if db.query(User).filter(User.username==username).first():
+        return JSONResponse({"ok": False, "error": "User already exists"})
+    is_admin = db.query(User).count() == 0  # первый пользователь админ
+    user = User(username=username, password_hash=pwd_context.hash(password), is_admin=is_admin)
+    db.add(user)
+    db.commit()
+    return JSONResponse({"ok": True, "username": username, "is_admin": is_admin})
+
+# Логин пользователя и выдача JWT
+@app.post("/token")
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username==form_data.username).first()
+    if not user or not pwd_context.verify(form_data.password, user.password_hash):
+        raise HTTPException(401, "Incorrect username or password")
+    token = create_access_token({"user_id": user.id})
+    return {"access_token": token, "token_type": "bearer", "is_admin": user.is_admin}
 
 @app.get("/admin", response_class=HTMLResponse)
 def admin_panel():
